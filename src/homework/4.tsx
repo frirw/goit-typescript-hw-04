@@ -1,13 +1,14 @@
 import React, { createContext, useMemo, useState, useContext } from "react";
 import noop from "lodash/noop";
+
 type MenuIds = "first" | "second" | "last";
 type Menu = { id: MenuIds; title: string };
 
 // Додати тип Menu Selected
-type SelectedMenu = { id?: MenuIds };
+type SelectedMenu = { id: MenuIds };
 type MenuSelected = { selectedMenu: SelectedMenu };
 const MenuSelectedContext = createContext<MenuSelected>({
-  selectedMenu: {},
+  selectedMenu: { id: "first" },
 });
 
 // Додайте тип MenuAction
@@ -21,14 +22,42 @@ type PropsProvider = {
 };
 
 function MenuProvider({ children }: PropsProvider) {
+  // Додати тип для SelectedMenu він повинен містити { id }
+  const [selectedMenu, setSelectedMenu] = useState<SelectedMenu>({
+    id: "first",
+  });
+
+  const menuContextAction = useMemo(
+    () => ({
+      onSelectedMenu: setSelectedMenu,
+    }),
+    []
+  );
+
+  const menuContextSelected = useMemo(
+    () => ({
+      selectedMenu,
+    }),
+    [selectedMenu]
+  );
+
+  return (
+    <MenuActionContext.Provider value={menuContextAction}>
+      <MenuSelectedContext.Provider value={menuContextSelected}>
+        {children}
+      </MenuSelectedContext.Provider>
+    </MenuActionContext.Provider>
+  );
 }
 
 type PropsMenu = {
   menus: Menu[]; // Додайте вірний тип для меню
 };
 
-function MenuComponent({ menus }: PropsMenu) {const { onSelectedMenu } = useContext(MenuActionContext);
+function MenuComponent({ menus }: PropsMenu) {
+  const { onSelectedMenu } = useContext(MenuActionContext);
   const { selectedMenu } = useContext(MenuSelectedContext);
+
   return (
     <>
       {menus.map((menu) => (
@@ -40,12 +69,13 @@ function MenuComponent({ menus }: PropsMenu) {const { onSelectedMenu } = useCont
     </>
   );
 }
+
 export function ComponentApp() {
   const menus: Menu[] = [
     {
       id: "first",
-        title: "first",
-       },
+      title: "first",
+    },
     {
       id: "second",
       title: "second",
@@ -55,6 +85,7 @@ export function ComponentApp() {
       title: "last",
     },
   ];
+
   return (
     <MenuProvider>
       <MenuComponent menus={menus} />
